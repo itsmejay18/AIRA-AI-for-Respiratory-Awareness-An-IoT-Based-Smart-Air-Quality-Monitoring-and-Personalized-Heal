@@ -33,11 +33,15 @@ class FarmRepository {
   Future<List<Zone>> fetchZones() async {
     final client = _supabaseClient;
     if (client != null) {
-      final zoneRows = await client.from('zones').select();
-      final zones = (zoneRows as List<dynamic>)
-          .map((item) => Zone.fromMap(item as Map<String, dynamic>))
-          .toList();
-      return Future.wait(zones.map(_enrichZone));
+      try {
+        final zoneRows = await client.from('zones').select();
+        final zones = (zoneRows as List<dynamic>)
+            .map((item) => Zone.fromMap(item as Map<String, dynamic>))
+            .toList();
+        return Future.wait(zones.map(_enrichZone));
+      } catch (_) {
+        return _mockZones();
+      }
     }
 
     return _mockZones();
@@ -71,19 +75,25 @@ class FarmRepository {
   ) async {
     final client = _supabaseClient;
     if (client != null) {
-      final start = DateTime.now()
-          .subtract(Duration(hours: range.hours))
-          .toIso8601String();
-      final response = await client
-          .from('sensor_data')
-          .select()
-          .eq('zone_id', zoneId)
-          .gte('recorded_at', start)
-          .order('recorded_at', ascending: false);
+      try {
+        final start = DateTime.now()
+            .subtract(Duration(hours: range.hours))
+            .toIso8601String();
+        final response = await client
+            .from('sensor_data')
+            .select()
+            .eq('zone_id', zoneId)
+            .gte('recorded_at', start)
+            .order('recorded_at', ascending: false);
 
-      return (response as List<dynamic>)
-          .map((item) => SensorDataPoint.fromMap(item as Map<String, dynamic>))
-          .toList();
+        return (response as List<dynamic>)
+            .map(
+              (item) => SensorDataPoint.fromMap(item as Map<String, dynamic>),
+            )
+            .toList();
+      } catch (_) {
+        return _mockHistory(zoneId, range);
+      }
     }
 
     return _mockHistory(zoneId, range);
@@ -95,16 +105,20 @@ class FarmRepository {
     } catch (_) {
       final client = _supabaseClient;
       if (client != null) {
-        final response = await client
-            .from('predictions')
-            .select()
-            .eq('zone_id', zoneId)
-            .order('created_at', ascending: false)
-            .limit(1)
-            .maybeSingle();
+        try {
+          final response = await client
+              .from('predictions')
+              .select()
+              .eq('zone_id', zoneId)
+              .order('created_at', ascending: false)
+              .limit(1)
+              .maybeSingle();
 
-        if (response != null) {
-          return Prediction.fromMap(response);
+          if (response != null) {
+            return Prediction.fromMap(response);
+          }
+        } catch (_) {
+          return _mockPrediction(zoneId);
         }
       }
     }
@@ -115,14 +129,18 @@ class FarmRepository {
   Future<List<FarmAlert>> fetchAlerts() async {
     final client = _supabaseClient;
     if (client != null) {
-      final response = await client
-          .from('alerts')
-          .select()
-          .order('created_at', ascending: false);
+      try {
+        final response = await client
+            .from('alerts')
+            .select()
+            .order('created_at', ascending: false);
 
-      return (response as List<dynamic>)
-          .map((item) => FarmAlert.fromMap(item as Map<String, dynamic>))
-          .toList();
+        return (response as List<dynamic>)
+            .map((item) => FarmAlert.fromMap(item as Map<String, dynamic>))
+            .toList();
+      } catch (_) {
+        return _mockAlerts();
+      }
     }
 
     try {
@@ -135,17 +153,24 @@ class FarmRepository {
   Stream<List<FarmAlert>> watchAlerts() {
     final client = _supabaseClient;
     if (client != null) {
-      return client
-          .from('alerts')
-          .stream(primaryKey: ['id'])
-          .order('created_at')
-          .map(
-            (rows) => rows
-                .map((item) => FarmAlert.fromMap(item))
-                .toList()
-                .reversed
-                .toList(),
-          );
+      try {
+        return client
+            .from('alerts')
+            .stream(primaryKey: ['id'])
+            .order('created_at')
+            .map(
+              (rows) => rows
+                  .map((item) => FarmAlert.fromMap(item))
+                  .toList()
+                  .reversed
+                  .toList(),
+            );
+      } catch (_) {
+        return Stream<List<FarmAlert>>.periodic(
+          const Duration(seconds: 12),
+          (_) => _mockAlerts(),
+        ).startWith(_mockAlerts());
+      }
     }
 
     return Stream<List<FarmAlert>>.periodic(
@@ -157,11 +182,15 @@ class FarmRepository {
   Future<void> markAlertsRead(List<FarmAlert> alerts) async {
     final client = _supabaseClient;
     if (client != null) {
-      for (final alert in alerts.where((item) => !item.isRead)) {
-        await client
-            .from('alerts')
-            .update({'is_read': true})
-            .eq('id', alert.id);
+      try {
+        for (final alert in alerts.where((item) => !item.isRead)) {
+          await client
+              .from('alerts')
+              .update({'is_read': true})
+              .eq('id', alert.id);
+        }
+      } catch (_) {
+        return;
       }
     }
   }
@@ -175,7 +204,9 @@ class FarmRepository {
 
       final client = _supabaseClient;
       if (client != null) {
-        await client.from('actions').insert(action.toMap());
+        try {
+          await client.from('actions').insert(action.toMap());
+        } catch (_) {}
       }
 
       return action;
@@ -194,16 +225,20 @@ class FarmRepository {
   Future<FarmAction?> fetchLastAction(String zoneId) async {
     final client = _supabaseClient;
     if (client != null) {
-      final response = await client
-          .from('actions')
-          .select()
-          .eq('zone_id', zoneId)
-          .order('created_at', ascending: false)
-          .limit(1)
-          .maybeSingle();
+      try {
+        final response = await client
+            .from('actions')
+            .select()
+            .eq('zone_id', zoneId)
+            .order('created_at', ascending: false)
+            .limit(1)
+            .maybeSingle();
 
-      if (response != null) {
-        return FarmAction.fromMap(response);
+        if (response != null) {
+          return FarmAction.fromMap(response);
+        }
+      } catch (_) {
+        // Fall through to the demo action below when the table is absent.
       }
     }
 
