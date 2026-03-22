@@ -48,23 +48,41 @@ class _SettingsBody extends ConsumerWidget {
           Card(
             child: ListTile(
               leading: Icon(
-                runtimeStatus.isDemoMode
+                runtimeStatus.liveDataAvailable
+                    ? Icons.cloud_done_outlined
+                    : runtimeStatus.needsSetup
                     ? Icons.cloud_off_outlined
-                    : Icons.cloud_done_outlined,
+                    : Icons.hourglass_empty_outlined,
               ),
               title: Text(
-                runtimeStatus.isDemoMode
-                    ? 'Demo Mode Active'
-                    : 'Live Data Active',
+                runtimeStatus.liveDataAvailable
+                    ? 'Live Data Active'
+                    : runtimeStatus.needsSetup
+                    ? 'Backend Setup Required'
+                    : 'Waiting for Live Data',
               ),
               subtitle: Text(
-                runtimeStatus.isDemoMode
-                    ? 'Supabase farm tables or AI services are still unavailable, so the app is using demo telemetry.'
-                    : 'The app can reach your live farm data services.',
+                runtimeStatus.liveDataAvailable
+                    ? 'The app can reach your live farm data services.'
+                    : runtimeStatus.needsSetup
+                    ? 'Configure Supabase and the backend before users can receive telemetry.'
+                    : 'No zone telemetry is loaded until real records arrive from your devices and database.',
               ),
             ),
           ),
         ],
+        const SizedBox(height: 12),
+        Card(
+          child: ListTile(
+            leading: const Icon(Icons.memory_outlined),
+            title: const Text('Devices'),
+            subtitle: const Text(
+              'Register and connect ESP32 sensor nodes to your farm zones.',
+            ),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/devices'),
+          ),
+        ),
         const SizedBox(height: 12),
         Card(
           child: SwitchListTile(

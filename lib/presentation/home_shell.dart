@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../features/alerts/application/alerts_providers.dart';
 import '../features/alerts/presentation/alerts_screen.dart';
@@ -47,23 +48,32 @@ class _HomeShellState extends ConsumerState<HomeShell> {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: runtimeStatus.isDemoMode
+                    color: runtimeStatus.liveDataAvailable
+                        ? Colors.green.shade100
+                        : runtimeStatus.needsSetup
                         ? Colors.amber.shade100
-                        : Colors.green.shade100,
+                        : Colors.orange.shade100,
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
-                    runtimeStatus.isDemoMode ? 'DEMO' : 'LIVE',
+                    runtimeStatus.label,
                     style: TextStyle(
                       fontWeight: FontWeight.w800,
-                      color: runtimeStatus.isDemoMode
+                      color: runtimeStatus.liveDataAvailable
+                          ? Colors.green.shade900
+                          : runtimeStatus.needsSetup
                           ? Colors.amber.shade900
-                          : Colors.green.shade900,
+                          : Colors.orange.shade900,
                     ),
                   ),
                 ),
               ),
             ),
+          IconButton(
+            tooltip: 'Devices',
+            onPressed: () => context.push('/devices'),
+            icon: const Icon(Icons.memory_outlined),
+          ),
         ],
       ),
       body: IndexedStack(index: _index, children: _screens),

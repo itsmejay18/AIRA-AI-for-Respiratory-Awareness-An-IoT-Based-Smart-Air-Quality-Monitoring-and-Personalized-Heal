@@ -142,7 +142,25 @@ class DashboardScreen extends ConsumerWidget {
                   icon: Icons.router_outlined,
                   title: 'No IoT nodes yet',
                   message:
-                      'Attach ESP32 sensor nodes to each farm zone to monitor device health and connectivity here.',
+                      'Register an ESP32 node from the Devices screen, then start sending telemetry to see it here.',
+                ),
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: FilledButton.tonalIcon(
+                    onPressed: () => context.push('/devices'),
+                    icon: const Icon(Icons.memory_outlined),
+                    label: const Text('Open Devices'),
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+              if (items.isEmpty) ...[
+                const EmptyStateCard(
+                  icon: Icons.dashboard_outlined,
+                  title: 'No zones loaded yet',
+                  message:
+                      'This app stays empty until real zone rows and sensor telemetry are stored in Supabase.',
                 ),
                 const SizedBox(height: 12),
               ],
