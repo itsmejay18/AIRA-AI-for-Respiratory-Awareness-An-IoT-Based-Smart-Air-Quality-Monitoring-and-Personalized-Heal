@@ -9,9 +9,11 @@ import '../../../core/widgets/async_value_widget.dart';
 import '../../../data/models/sensor_data_point.dart';
 import '../../../data/repositories/farm_repository.dart';
 import '../../../presentation/widgets/empty_state_card.dart';
+import '../../../presentation/widgets/iot_device_card.dart';
 import '../../../presentation/widgets/sensor_metric_tile.dart';
 import '../../../presentation/widgets/time_range_selector.dart';
 import '../../dashboard/application/dashboard_providers.dart';
+import '../application/iot_providers.dart';
 import '../application/zone_providers.dart';
 
 class ZoneDetailScreen extends ConsumerStatefulWidget {
@@ -32,6 +34,7 @@ class _ZoneDetailScreenState extends ConsumerState<ZoneDetailScreen> {
     final history = ref.watch(
       zoneHistoryProvider((zoneId: widget.zoneId, range: _range)),
     );
+    final device = ref.watch(zoneIoTDeviceProvider(widget.zoneId));
 
     return Scaffold(
       appBar: AppBar(title: const Text('Zone Details')),
@@ -146,6 +149,29 @@ class _ZoneDetailScreenState extends ConsumerState<ZoneDetailScreen> {
                         'Last action: ${zoneDetails.lastAction?.actionType ?? 'No recent action'}',
                       ),
                     ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              device.when(
+                data: (value) => value == null
+                    ? const EmptyStateCard(
+                        icon: Icons.memory_outlined,
+                        title: 'No node assigned',
+                        message:
+                            'Assign an ESP32 device to this zone to monitor connectivity, battery, and actuator health.',
+                      )
+                    : IoTDeviceCard(device: value),
+                loading: () => const Card(
+                  child: Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                ),
+                error: (error, _) => Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text('Unable to load IoT node status: $error'),
                   ),
                 ),
               ),

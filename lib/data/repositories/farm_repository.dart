@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/farm_action.dart';
 import '../models/farm_alert.dart';
+import '../models/iot_device.dart';
 import '../models/prediction.dart';
 import '../models/sensor_data_point.dart';
 import '../models/zone.dart';
@@ -258,6 +259,46 @@ class FarmRepository {
     );
   }
 
+  Future<List<IoTDevice>> fetchIoTDevices() async {
+    final client = _supabaseClient;
+    if (client != null) {
+      try {
+        final response = await client
+            .from('iot_devices')
+            .select()
+            .order('last_seen', ascending: false);
+
+        final devices = (response as List<dynamic>)
+            .map((item) => IoTDevice.fromMap(item as Map<String, dynamic>))
+            .toList();
+        if (devices.isNotEmpty) {
+          return devices;
+        }
+      } catch (_) {
+        // Fall back to mock devices when the table is unavailable.
+      }
+    }
+
+    return _mockIoTDevices();
+  }
+
+  Stream<List<IoTDevice>> watchIoTDevices() async* {
+    yield await fetchIoTDevices();
+    yield* Stream<void>.periodic(
+      const Duration(seconds: 15),
+    ).asyncMap((_) => fetchIoTDevices());
+  }
+
+  Future<IoTDevice?> fetchDeviceForZone(String zoneId) async {
+    final devices = await fetchIoTDevices();
+    for (final device in devices) {
+      if (device.zoneId == zoneId) {
+        return device;
+      }
+    }
+    return null;
+  }
+
   Stream<List<Zone>> _watchZonesStream() async* {
     yield await fetchZones();
     yield* Stream<void>.periodic(
@@ -395,6 +436,48 @@ class FarmRepository {
         type: 'anomaly',
         isRead: false,
         createdAt: DateTime.now().subtract(const Duration(hours: 2)),
+      ),
+    ];
+  }
+
+  List<IoTDevice> _mockIoTDevices() {
+    final now = DateTime.now();
+    return [
+      IoTDevice(
+        id: 'node-1',
+        zoneId: 'zone-1',
+        name: 'ESP32 North Field',
+        connectionState: IoTConnectionState.online,
+        lastSeen: now.subtract(const Duration(minutes: 2)),
+        batteryLevel: 92,
+        signalStrength: 88,
+        firmwareVersion: '1.2.4',
+        pumpOnline: true,
+        pendingSync: false,
+      ),
+      IoTDevice(
+        id: 'node-2',
+        zoneId: 'zone-2',
+        name: 'ESP32 Greenhouse A',
+        connectionState: IoTConnectionState.warning,
+        lastSeen: now.subtract(const Duration(minutes: 12)),
+        batteryLevel: 44,
+        signalStrength: 57,
+        firmwareVersion: '1.2.3',
+        pumpOnline: true,
+        pendingSync: true,
+      ),
+      IoTDevice(
+        id: 'node-3',
+        zoneId: 'zone-3',
+        name: 'ESP32 Seedling Bed',
+        connectionState: IoTConnectionState.online,
+        lastSeen: now.subtract(const Duration(minutes: 5)),
+        batteryLevel: 76,
+        signalStrength: 80,
+        firmwareVersion: '1.2.4',
+        pumpOnline: false,
+        pendingSync: false,
       ),
     ];
   }

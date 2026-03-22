@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/widgets/async_value_widget.dart';
+import '../../../data/models/iot_device.dart';
+import '../../../presentation/widgets/empty_state_card.dart';
+import '../../../presentation/widgets/iot_device_card.dart';
 import '../../../presentation/widgets/zone_card.dart';
 import '../../../presentation/widgets/runtime_status_banner.dart';
 import '../../alerts/application/alerts_providers.dart';
@@ -16,6 +19,8 @@ class DashboardScreen extends ConsumerWidget {
     final zones = ref.watch(zonesProvider);
     final unreadCount = ref.watch(unreadAlertsCountProvider);
     final runtimeStatus = ref.watch(appRuntimeStatusProvider).asData?.value;
+    final iotDevices =
+        ref.watch(iotDevicesProvider).asData?.value ?? const <IoTDevice>[];
 
     return AsyncValueWidget(
       value: zones,
@@ -99,10 +104,48 @@ class DashboardScreen extends ConsumerWidget {
                           ],
                         ),
                       ),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'IoT nodes online',
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            Text(
+                              '${iotDevices.where((device) => device.connectionState == IoTConnectionState.online).length}',
+                              style: Theme.of(context).textTheme.displaySmall
+                                  ?.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),
               ),
+              const SizedBox(height: 16),
+              if (iotDevices.isNotEmpty) ...[
+                Text(
+                  'IoT node monitoring',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 12),
+                for (final device in iotDevices.take(2)) ...[
+                  IoTDeviceCard(device: device, compact: true),
+                  const SizedBox(height: 12),
+                ],
+              ] else ...[
+                const EmptyStateCard(
+                  icon: Icons.router_outlined,
+                  title: 'No IoT nodes yet',
+                  message:
+                      'Attach ESP32 sensor nodes to each farm zone to monitor device health and connectivity here.',
+                ),
+                const SizedBox(height: 12),
+              ],
               for (final zone in items) ...[
                 ZoneCard(
                   zone: zone,
