@@ -49,6 +49,15 @@ class IoTDeviceCard extends StatelessWidget {
             Text(
               'Last seen ${DateFormat.yMMMd().add_jm().format(device.lastSeen)}',
             ),
+            if (!compact && device.endpointUrl.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Text(
+                'Endpoint ${device.endpointUrl}',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: Colors.black54),
+              ),
+            ],
             const SizedBox(height: 12),
             Wrap(
               spacing: 10,

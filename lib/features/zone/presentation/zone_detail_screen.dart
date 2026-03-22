@@ -6,12 +6,15 @@ import 'package:intl/intl.dart';
 import '../../../core/utils/plant_translator.dart';
 import '../../../core/utils/status_color_helper.dart';
 import '../../../core/widgets/async_value_widget.dart';
+import '../../../data/models/farm_action.dart';
+import '../../../data/models/iot_device.dart';
 import '../../../data/models/sensor_data_point.dart';
 import '../../../data/repositories/farm_repository.dart';
 import '../../../presentation/widgets/empty_state_card.dart';
 import '../../../presentation/widgets/iot_device_card.dart';
 import '../../../presentation/widgets/sensor_metric_tile.dart';
 import '../../../presentation/widgets/time_range_selector.dart';
+import '../../devices/application/device_providers.dart';
 import '../../dashboard/application/dashboard_providers.dart';
 import '../application/iot_providers.dart';
 import '../application/zone_providers.dart';
@@ -192,9 +195,43 @@ class _ZoneDetailScreenState extends ConsumerState<ZoneDetailScreen> {
               FilledButton.icon(
                 onPressed: () async {
                   final repository = ref.read(farmRepositoryProvider);
-                  final action = await repository.triggerManualIrrigation(
+                  var action = await repository.triggerManualIrrigation(
                     widget.zoneId,
                   );
+
+                  if (action.status == 'failed') {
+                    final localDeviceRepository = await ref.read(
+                      localDeviceRepositoryProvider.future,
+                    );
+                    final localDevice = await localDeviceRepository
+                        .loadDeviceForZone(widget.zoneId);
+                    if (localDevice != null) {
+                      try {
+                        await ref
+                            .read(esp32DeviceServiceProvider)
+                            .triggerIrrigation(localDevice);
+                        await localDeviceRepository.saveDevice(
+                          localDevice.copyWith(
+                            pumpOnline: true,
+                            connectionState: IoTConnectionState.online,
+                            lastSeen: DateTime.now(),
+                            pendingSync: false,
+                          ),
+                        );
+                        action = FarmAction(
+                          id: 'local-irrigation-${DateTime.now().millisecondsSinceEpoch}',
+                          zoneId: widget.zoneId,
+                          actionType: 'manual_irrigation',
+                          status: 'completed',
+                          createdAt: DateTime.now(),
+                          notes:
+                              'Irrigation sent directly from the app to the ESP32 device.',
+                        );
+                        ref.invalidate(iotDevicesProvider);
+                        ref.invalidate(localZonesProvider);
+                      } catch (_) {}
+                    }
+                  }
 
                   if (!context.mounted) return;
 
