@@ -11,9 +11,16 @@ class AppConfig {
   });
 
   factory AppConfig.fromEnv() {
+    final supabaseUrl =
+        dotenv.maybeGet('SUPABASE_URL') ?? dotenv.maybeGet('url') ?? '';
+    final supabaseAnonKey =
+        dotenv.maybeGet('SUPABASE_ANON_KEY') ??
+        dotenv.maybeGet('anon key') ??
+        '';
+
     return AppConfig(
-      supabaseUrl: dotenv.maybeGet('SUPABASE_URL') ?? '',
-      supabaseAnonKey: dotenv.maybeGet('SUPABASE_ANON_KEY') ?? '',
+      supabaseUrl: supabaseUrl.trim(),
+      supabaseAnonKey: supabaseAnonKey.trim(),
       aiBaseUrl:
           dotenv.maybeGet('AI_BASE_URL') ?? AppConstants.aiBaseUrlFallback,
     );
