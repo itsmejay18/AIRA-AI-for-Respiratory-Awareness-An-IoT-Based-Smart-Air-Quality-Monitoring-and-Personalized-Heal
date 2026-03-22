@@ -28,6 +28,7 @@ class LocalDeviceRepository {
     required String deviceId,
     required String zoneId,
     required String deviceName,
+    required String endpointUrl,
   }) async {
     final devices = await loadDevices();
     final index = devices.indexWhere((device) => device.id == deviceId);
@@ -35,6 +36,7 @@ class LocalDeviceRepository {
       id: deviceId,
       zoneId: zoneId,
       name: deviceName,
+      endpointUrl: endpointUrl,
       connectionState: IoTConnectionState.offline,
       lastSeen: DateTime.now(),
       batteryLevel: index >= 0 ? devices[index].batteryLevel : 100,
@@ -63,6 +65,33 @@ class LocalDeviceRepository {
       }
     }
     return null;
+  }
+
+  Future<void> saveDevice(IoTDevice device) async {
+    final devices = await loadDevices();
+    final index = devices.indexWhere((item) => item.id == device.id);
+    if (index >= 0) {
+      devices[index] = device;
+    } else {
+      devices.add(device);
+    }
+    await _saveDevices(devices);
+  }
+
+  Future<IoTDevice?> loadDevice(String deviceId) async {
+    final devices = await loadDevices();
+    for (final device in devices) {
+      if (device.id == deviceId) {
+        return device;
+      }
+    }
+    return null;
+  }
+
+  Future<void> deleteDevice(String deviceId) async {
+    final devices = await loadDevices();
+    devices.removeWhere((device) => device.id == deviceId);
+    await _saveDevices(devices);
   }
 
   Future<void> _saveDevices(List<IoTDevice> devices) async {

@@ -9,4 +9,5 @@ class AppConstants {
   static const String settingsPrefsKey = 'smart_farm_settings';
   static const String mockSessionPrefsKey = 'smart_farm_mock_session';
   static const String localDevicesPrefsKey = 'smart_farm_local_devices';
+  static const String localTelemetryPrefsKey = 'smart_farm_local_telemetry';
 }
