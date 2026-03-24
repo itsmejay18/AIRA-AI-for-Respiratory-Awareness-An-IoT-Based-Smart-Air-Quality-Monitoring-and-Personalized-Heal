@@ -5,10 +5,10 @@ import '../../devices/application/device_providers.dart';
 import '../../dashboard/application/dashboard_providers.dart';
 
 final alertsProvider = StreamProvider<List<FarmAlert>>((ref) {
-  return Stream<List<FarmAlert>>.periodic(
+  return Stream<void>.periodic(
     const Duration(seconds: 12),
   ).asyncMap((_) async {
-    final repository = ref.watch(farmRepositoryProvider);
+    final repository = ref.read(farmRepositoryProvider);
     final remoteAlerts = await repository.fetchAlerts();
     if (remoteAlerts.isNotEmpty) return remoteAlerts;
     return ref.read(localAlertsProvider.future);

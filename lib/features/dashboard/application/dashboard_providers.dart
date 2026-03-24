@@ -20,10 +20,10 @@ final farmRepositoryProvider = Provider<FarmRepository>((ref) {
 });
 
 final zonesProvider = StreamProvider<List<Zone>>((ref) {
-  return Stream<List<Zone>>.periodic(
+  return Stream<void>.periodic(
     const Duration(seconds: 10),
   ).asyncMap((_) async {
-    final repository = ref.watch(farmRepositoryProvider);
+    final repository = ref.read(farmRepositoryProvider);
     final remoteZones = await repository.fetchZones();
     if (remoteZones.isNotEmpty) return remoteZones;
     return ref.read(localZonesProvider.future);
